@@ -31,8 +31,8 @@ function __gitnow_load_config -d "Reads the GitNow configuration file"
     set -l v_section 0
 
     # Valid sections
-    set -l v_keybindings "keybindings"
-    set -l v_options "options"
+    set -l v_keybindings keybindings
+    set -l v_options options
 
     # Options set 
     set -l v_clipboard 0
@@ -46,10 +46,12 @@ function __gitnow_load_config -d "Reads the GitNow configuration file"
         set -l v_command_val ""
 
         # Loop every char for current line
-        echo $l | while read -n 1 -la c;
+        echo $l | while read -n 1 -la c
             switch $c
                 case '['
-                    if test $v_comment -eq 1; continue; end
+                    if test $v_comment -eq 1
+                        continue
+                    end
 
                     # if test $v_section -gt 0
                     #     set v_section 0
@@ -57,9 +59,13 @@ function __gitnow_load_config -d "Reads the GitNow configuration file"
                     # end
 
                     # Start section
-                    if test $v_section -eq 0; set v_section 1; end
+                    if test $v_section -eq 0
+                        set v_section 1
+                    end
                 case ']'
-                    if test $v_comment -eq 1; continue; end
+                    if test $v_comment -eq 1
+                        continue
+                    end
 
                     # Check section name
                     if test $v_section -eq 1
@@ -68,7 +74,7 @@ function __gitnow_load_config -d "Reads the GitNow configuration file"
                             set v_section 3
                             continue
                         end
-                        
+
                         # keybindings
                         if [ "$v_str" = "$v_keybindings" ]
                             set v_section 2
@@ -83,10 +89,14 @@ function __gitnow_load_config -d "Reads the GitNow configuration file"
                 case '\r'
                     continue
                 case '#'
-                    if test $v_comment -eq 0; set v_comment 1; end
+                    if test $v_comment -eq 0
+                        set v_comment 1
+                    end
                     continue
                 case '*'
-                    if test $v_comment -eq 1; continue; end
+                    if test $v_comment -eq 1
+                        continue
+                    end
 
                     # If section has started then accumulate chars and continue
                     if test $v_section -eq 1
@@ -98,7 +108,7 @@ function __gitnow_load_config -d "Reads the GitNow configuration file"
                     # NOTE: only alphabetic and hyphens chars are allowed
                     if test $v_section -eq 2; or test $v_section -eq 3
                         switch $c
-                            case 'a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 'u' 'v' 'w' 'x' 'y' 'z' '-'
+                            case a b c d e f g h i j k l m n o p q r s t u v w x y z -
                                 if test $v_command_sep -eq 0
                                     set v_command_key "$v_command_key$c"
                                     continue
@@ -130,11 +140,11 @@ function __gitnow_load_config -d "Reads the GitNow configuration file"
         if test $v_section -eq 3
             switch $v_command_key
                 # Clipboard option
-                case 'clipboard'
-                    if [ "$v_command_val" = "true" ]
+                case clipboard
+                    if [ "$v_command_val" = true ]
                         set v_clipboard 1
                     end
-                # NOTE: handle future new options using a new case
+                    # NOTE: handle future new options using a new case
                 case '*'
                     continue
             end
@@ -148,14 +158,22 @@ function __gitnow_load_config -d "Reads the GitNow configuration file"
             set -l cmd
 
             switch $v_command_key
-                case 'release' 'hotfix' 'feature' 'bugfix'
+                case release hotfix feature bugfix
                     # Read text from clipboard if there is a valid clipboard program
                     # and if the "clipboard" option is "true"
                     if test -n $g_xpaste; and test $v_clipboard -eq 1
-                        set cmd (echo -n "bind \\$v_command_val \"echo; if $v_command_key ($g_xpaste); commandline -f repaint; else ; end\"")
+                        if test $fish_key_bindings = fish_vi_key_bindings
+                            set cmd (echo -n "bind --mode insert \\$v_command_val \"echo; if $v_command_key ($g_xpaste); commandline -f repaint; else ; end\"")
+                        else
+                            set cmd (echo -n "bind \\$v_command_val \"echo; if $v_command_key ($g_xpaste); commandline -f repaint; else ; end\"")
+                        end
                     else
                         # Otherwise read text from standard input
-                        set cmd (echo -n "bind \\$v_command_val \"echo; if $v_command_key (read); commandline -f repaint; else ; end\"")
+                        if test $fish_key_bindings = fish_vi_key_bindings
+                            set cmd (echo -n "bind --mode insert \\$v_command_val \"echo; if $v_command_key (read); commandline -f repaint; else ; end\"")
+                        else
+                            set cmd (echo -n "bind \\$v_command_val \"echo; if $v_command_key (read); commandline -f repaint; else ; end\"")
+                        end
                     end
                 case '*'
                     # Check command key against a list of valid commands
@@ -168,13 +186,19 @@ function __gitnow_load_config -d "Reads the GitNow configuration file"
                     end
 
                     # If command key is not valid then just skip out
-                    if test $v_valid -eq 0; continue; end
+                    if test $v_valid -eq 0
+                        continue
+                    end
 
-                    set cmd (echo -n "bind \\$v_command_val \"echo; $v_command_key; commandline -f repaint;\"")
+                    if test $fish_key_bindings = fish_vi_key_bindings
+                        set cmd (echo -n "bind --mode insert \\$v_command_val \"echo; $v_command_key; commandline -f repaint;\"")
+                    else
+                        set cmd (echo -n "bind \\$v_command_val \"echo; $v_command_key; commandline -f repaint;\"")
+                    end
             end
 
             eval $cmd
         end
 
-    end < $config_file
+    end <$config_file
 end
